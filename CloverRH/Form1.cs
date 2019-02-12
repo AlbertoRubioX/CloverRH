@@ -2426,8 +2426,13 @@ namespace CloverRH
                 }
 
 
+                DateTime dtTime = DateTime.Now;
+                int iHora = dtTime.Hour;
+                string sHoraG = Convert.ToString(iHora);
+                string sHrReg = sHoraG.PadLeft(2, '0') + ":00";
+                bincont.hora = sHrReg;
+
                 string sHora = getFileTime();
-                bincont.hora = sHora;
                 string sArchivo = "Warehouse Bin Contents " + sHora;// "Contador1";
                 if (sLine != "TPACKA")
                     sArchivo += sLine.ToLower();
