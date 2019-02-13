@@ -58,7 +58,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>human-resources-management-icon.ico</ApplicationIcon>
@@ -126,7 +126,6 @@
     <EmbeddedResource Include="wfConfig.resx">
       <DependentUpon>wfConfig.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="CloverRH_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

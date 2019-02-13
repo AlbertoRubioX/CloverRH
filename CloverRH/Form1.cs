@@ -21,6 +21,7 @@ namespace CloverRH
         private int _iAxo;
         private int _iMes;
         private string _sUsuario;
+        private string _lsPath;
         public wfAsistente()
         {
             InitializeComponent();
@@ -31,6 +32,9 @@ namespace CloverRH
         {
             try
             {
+                DataTable dt = ConfigCPROLogica.Consultar();
+                _lsPath = dt.Rows[0]["bin_directory"].ToString();
+
                 _sUsuario = Environment.UserName.ToString().ToUpper();
                 if (_sUsuario == "AGONZ0")
                     btnMensual.Visible = true;
@@ -66,6 +70,9 @@ namespace CloverRH
             GeneraGlobals();
             GeneraEnvios();
             */
+
+            GeneraInvCiclico();
+            GenerarInvCiclicoPickline();
         }
         #endregion
 
@@ -1704,25 +1711,25 @@ namespace CloverRH
         private void btnSave_Click(object sender, EventArgs e)
         {
             
-            if (dgwData.Rows.Count == 0)
-                return;
+            //if (dgwData.Rows.Count == 0)
+            //    return;
 
-            int iRow = dgwData.CurrentCell.RowIndex;
-            if (dgwData.CurrentRow.Index == -1)
-                return;
+            //int iRow = dgwData.CurrentCell.RowIndex;
+            //if (dgwData.CurrentRow.Index == -1)
+            //    return;
 
-            if (iRow == 0)
-                GeneraActivos(false);
-            else
-            {
-                if (iRow == 1)
-                {
-                    CapturaPop wfPop = new CapturaPop();
-                    wfPop.ShowDialog();
-                    DateTime dtFecha = wfPop._dtReturn;
-                    GeneraAsistencia(dtFecha,false);
-                }
-            }
+            //if (iRow == 0)
+            //    GeneraActivos(false);
+            //else
+            //{
+            //    if (iRow == 1)
+            //    {
+            //        CapturaPop wfPop = new CapturaPop();
+            //        wfPop.ShowDialog();
+            //        DateTime dtFecha = wfPop._dtReturn;
+            //        GeneraAsistencia(dtFecha,false);
+            //    }
+            //}
             
         }
 
@@ -1731,8 +1738,8 @@ namespace CloverRH
 
         private void btGlobal_Click(object sender, EventArgs e)
         {
-            GeneraKanban(false);
-            GeneraGlobals();
+            //GeneraKanban(false);
+            //GeneraGlobals();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -2385,5 +2392,376 @@ namespace CloverRH
             }
         }
         #endregion
+
+
+        private void GeneraInvCiclico()
+        {
+            BinContLogica bincont = new BinContLogica();
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                string sPta = "EMPN";
+                string sLine = string.Empty;
+                switch (sPta)
+                {
+                    case "EMPN":
+                        sLine = "TPACKA";
+                        break;
+                    case "COL":
+                        sLine = "CTNR";
+                        break;
+                    case "MON":
+                        sLine = "TNR";
+                        break;
+                    case "INKM":
+                        sLine = "INKM";
+                        break;
+                    case "INKP":
+                        sLine = "INKP";
+                        break;
+                    case "FUS":
+                        sLine = "FUS";
+                        break;
+                }
+
+
+                DateTime dtTime = DateTime.Now;
+                int iHora = dtTime.Hour;
+                string sHoraG = Convert.ToString(iHora);
+                string sHrReg = sHoraG.PadLeft(2, '0') + ":00";
+                bincont.hora = sHrReg;
+
+                string sHora = getFileTime();
+                string sArchivo = "Warehouse Bin Contents " + sHora;// "Contador1";
+                if (sLine != "TPACKA")
+                    sArchivo += sLine.ToLower();
+
+                sArchivo = _lsPath + @"\" + sArchivo + ".csv";
+                if (!File.Exists(sArchivo))
+                {
+                    Cursor = Cursors.Default;
+                    return;
+                }
+
+                if (BinContLogica.VerificarRegistros(bincont))
+                {
+                    return;
+                }
+
+                DataTable dt = LoadFile(sArchivo);
+                               
+
+                for (int x = 0; x < dt.Rows.Count; x++)
+                {
+                    //eliminar BIN_CODE <> TPACKA
+                    string sBin = dt.Rows[x][0].ToString();
+                    if (!sBin.StartsWith(sLine))
+                    {
+                        continue;
+                    }
+                    string sBinLine = sBin.Substring(sBin.Length - 2);
+                    int iP = 0;
+                    if (!int.TryParse(sBinLine.Substring(0, 1), out iP))
+                        sBinLine = sBinLine.Substring(1);
+
+                    
+                    if (sBinLine == "0")
+                    {
+                        continue;
+                    }
+                   
+
+                    //eliminar sin saldo
+                    int iCant = 0;
+                    if (!int.TryParse(dt.Rows[x][5].ToString(), out iCant))//QUANTITY --> BEFORE //Available qty to take 18
+                        iCant = 0;
+
+                    if (iCant > 0)
+                    {
+                        bincont.bincode = dt.Rows[x][0].ToString();
+                        bincont.item = dt.Rows[x][1].ToString();
+                        bincont.descrip = dt.Rows[x][2].ToString();
+                        bincont.um= dt.Rows[x][4].ToString();
+                        bincont.cantidad =double.Parse(dt.Rows[x][5].ToString());
+                        bincont.planta = sPta;
+                        BinContLogica.guardar(bincont);                        
+                    }
+                }
+
+               
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), Text, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                Cursor = Cursors.Arrow;
+            }
+            Cursor = Cursors.Arrow;
+
+
+
+        }
+
+        private void GenerarInvCiclicoPickline()
+        {
+            BinContLogica bincont = new BinContLogica();
+
+            try
+            {
+                string sPta = "EMPN";
+                string sLine = string.Empty;
+                string sLineF = string.Empty;
+                switch (sPta)
+                {
+                    case "EMPN":
+                        sLine = "TPACKA";
+                        sLineF = "MX1APAC";
+                        break;
+                    case "COL":
+                        sLine = "CTNR";
+                        sLineF = "MX1ACTNR";
+                        break;
+                    case "MON":
+                        sLine = "TNR";
+                        sLineF = "MX1ATNR";
+                        break;
+                    case "INKM":
+                        sLine = "INKM";
+                        break;
+                    case "INKP":
+                        sLine = "INKP";
+                        break;
+                    case "FUS":
+                        sLine = "FUS";
+                        sLineF = "MX1AFUSER";
+                        break;
+                }
+
+                string sHora = getFileTime();
+                string sArchivo = "Registered pickline " + sHora;
+                if (sLine != "TPACKA")
+                    sArchivo += sLine.ToLower();
+
+                sArchivo = _lsPath + @"\" + sArchivo + ".csv";
+                if (!File.Exists(sArchivo))
+                {
+                    Cursor = Cursors.Default;
+                    return;
+                }
+                bincont.hora = sHora;                
+                if (!BinContLogica.VerificarRegistros(bincont))
+                {
+                    return;
+                }
+                DataTable dtBinCont = BinContLogica.obtenerBinCont(bincont);
+                DataTable dt = LoadFile(sArchivo);
+
+                for (int x = 0; x < dt.Rows.Count; x++)
+                {
+                    string sRouting = dt.Rows[x][2].ToString();//9
+                    if (string.IsNullOrEmpty(sRouting))
+                    {
+                        dt.Rows[x].Delete();
+                        x--;
+                        continue;
+                    }
+
+                    if (!sRouting.StartsWith(sLine))
+                    {
+                        dt.Rows[x].Delete();
+                        x--;
+                        continue;
+                    }
+
+                    //sRouting = sRouting.Substring(7);
+                    int iP = 0;
+                    string sRouLine = sRouting.Substring(sRouting.Length - 2);
+                    if (!int.TryParse(sRouLine.Substring(0, 1), out iP))
+                        sRouLine = sRouLine.Substring(1);
+                    sRouLine = sRouLine.PadLeft(2, '0');
+
+                }
+                
+                if (dt.Rows.Count > 0)
+                {
+                    compararInvCiclico(dtBinCont,dt);
+                }
+                
+                Cursor = Cursors.Arrow;
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), Text, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+        }
+
+        public void compararInvCiclico(DataTable dt_BinCont, DataTable dt_Pickline)
+        {
+            BinContLogica bincont = new BinContLogica();
+            string bincodepick = "";
+            string itempick = "";
+            double SUMCant = 0;
+
+            for (int x = 0; x < dt_BinCont.Rows.Count; x++)
+            {
+                SUMCant = 0;
+                bincont.folio = dt_BinCont.Rows[x][0].ToString();
+                bincont.fecha = DateTime.Parse(dt_BinCont.Rows[x][1].ToString());
+                bincont.hora = dt_BinCont.Rows[x][2].ToString();
+                bincont.planta = dt_BinCont.Rows[x][3].ToString();
+                bincont.bincode = dt_BinCont.Rows[x][4].ToString();
+                bincont.item= dt_BinCont.Rows[x][5].ToString();
+                bincont.descrip= dt_BinCont.Rows[x][6].ToString();
+                bincont.um= dt_BinCont.Rows[x][7].ToString();
+                bincont.cantidad=double.Parse(dt_BinCont.Rows[x][8].ToString());
+
+                for (int cont_pick=0; cont_pick < dt_Pickline.Rows.Count; cont_pick++)
+                {
+                    bincodepick = dt_Pickline.Rows[cont_pick][2].ToString();
+                    itempick = dt_Pickline.Rows[cont_pick][3].ToString();                   
+
+                    if (bincont.bincode.Equals(bincodepick) && bincont.item.Equals(itempick))
+                    {
+                         SUMCant+=double.Parse(dt_Pickline.Rows[cont_pick][4].ToString());
+                    }
+
+                }
+               
+                    BinContLogica.ActualizarBinCont(bincont, SUMCant, bincont.cantidad - SUMCant);
+
+                
+
+            }
+
+
+        }
+
+        private string getFileTime()
+        {
+            DateTime dtTime = DateTime.Now;
+            int iHora = dtTime.Hour;
+            if (iHora > 23)
+                iHora -= 23;
+
+            if (iHora >= 0 && iHora < 6)
+                dtTime = dtTime.AddDays(-1);
+            string sHrFile = string.Empty;
+            if (iHora < 12)
+                sHrFile = iHora.ToString() + "am";
+            else
+            {
+                if (iHora > 23)
+                {
+                    if (iHora == 24)
+                        iHora = 12;
+                    else
+                        iHora -= 24;
+                    sHrFile = iHora.ToString() + "am";
+                }
+                else
+                {
+                    if (iHora > 12)
+                        iHora -= 12;
+                    sHrFile = iHora.ToString() + "pm";
+                }
+            }
+            return sHrFile;
+        }
+
+        private DataTable LoadFile(string _asFile)
+        {
+            int iErr = 0;
+            DataTable dt = new DataTable();
+            try
+            {
+                using (StreamReader sr = new StreamReader(_asFile))
+                {
+                    string[] headers = sr.ReadLine().Split(',');
+                    foreach (string header in headers)
+                    {
+                        dt.Columns.Add(header);
+                    }
+
+                    while (!sr.EndOfStream)
+                    {
+
+                        List<string> result = SplitCSV(sr.ReadLine());
+                        //string[] rows = sr.ReadLine().Split(',');
+                        if (result.Count > 0)
+                        {
+                            DataRow dr = dt.NewRow();
+                            for (int i = 0; i < headers.Length; i++)
+                            {
+                                //dr[i] = rows[i];
+                                dr[i] = result[i];
+                                iErr = i;
+                            }
+                            dt.Rows.Add(dr);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                string sErr = iErr.ToString() + " " + e.ToString();
+                MessageBox.Show(sErr, Text, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+
+            return dt;
+        }
+
+        public List<string> SplitCSV(string line)
+        {
+            List<string> result = new List<string>();
+
+            if (string.IsNullOrEmpty(line))
+            {
+                //throw new ArgumentException();
+                return result;
+            }
+
+
+
+
+            int index = 0;
+            int start = 0;
+            bool inQuote = false;
+            StringBuilder val = new StringBuilder();
+
+            // parse line
+            foreach (char c in line)
+            {
+                switch (c)
+                {
+                    case '"':
+                        inQuote = !inQuote;
+                        break;
+
+                    case ',':
+                        if (!inQuote)
+                        {
+                            result.Add(line.Substring(start, index - start)
+                                .Replace("\"", ""));
+
+                            start = index + 1;
+                        }
+
+                        break;
+                }
+
+                index++;
+            }
+
+            if (start < index)
+            {
+                result.Add(line.Substring(start, index - start).Replace("\"", ""));
+            }
+
+            return result;
+        }
+
+
     }
+
 }
