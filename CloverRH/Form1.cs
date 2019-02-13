@@ -54,7 +54,7 @@ namespace CloverRH
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            Iniciar();
+            //Iniciar();
         }
         private void Iniciar()
         {
@@ -1754,8 +1754,8 @@ namespace CloverRH
                 _iMes--;
             
             /*default*/
-            _iAxo = 2018;
-            _iMes = 12;
+            //_iAxo = 2018;
+            //_iMes = 2;
 
             string sAxo = _iAxo.ToString();
             string sMes = string.Empty;
@@ -1783,9 +1783,7 @@ namespace CloverRH
             act.Mes = _iMes;
             if (!ActuserLogicaIT.Verificar(act))
             {
-                if (!File.Exists(sFile))
-                    return;
-
+               
                 DataTable dtExc = new DataTable("semanal");
                 dtExc.Columns.Add("semana", typeof(string));
                 dtExc.Columns.Add("dia", typeof(string));
@@ -1837,7 +1835,7 @@ namespace CloverRH
                         continue;
                 }
             }
-            for (int i = 1; i <= 5; i++)
+            for (int i = 5; i <= 5; i++)
             {
                 string sWeekFile = monthName + " W0" + i.ToString() + ".xlsx";
                 string sFileW = sPath + @"\" + sWeekFile;
@@ -1847,7 +1845,8 @@ namespace CloverRH
                 setExcelWeek(sFileW, i);
             }
 
-            setExcelMonth(sFile);
+            if (File.Exists(sFile))
+                setExcelMonth(sFile);
 
             System.Diagnostics.Process[] process = System.Diagnostics.Process.GetProcessesByName("Excel");
             foreach (System.Diagnostics.Process p in process)
@@ -1892,13 +1891,13 @@ namespace CloverRH
 
                 string sSisAnt = string.Empty;
                 int iExc = 3;
-                string[] sCategos = { "0", "0","A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "M" };
+                string[] sCategos = { "0", "0","A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K" };
 
                 for (int x = 0; x < _data.Rows.Count; x++) //reporte semanal x dia
                 {
                     string sSistema = _data.Rows[x][0].ToString();
-                    if (string.IsNullOrEmpty(sSistema) || sSistema == "0")
-                        continue;
+                    //if (string.IsNullOrEmpty(sSistema) || sSistema == "0")
+                    //    continue;
 
                     if (string.IsNullOrEmpty(sSisAnt))
                         sSisAnt = sSistema;
@@ -1972,7 +1971,7 @@ namespace CloverRH
 
                         string sSisAnt = string.Empty;
                         int iExc = 3;
-                        string[] sCategos = { "0","0", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
+                        string[] sCategos = { "0","0", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K" };
 
                         for (int x = 0; x < _data.Rows.Count; x++) //reporte semanal x dia
                         {
