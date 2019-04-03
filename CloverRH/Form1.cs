@@ -37,9 +37,13 @@ namespace CloverRH
 
                 _sUsuario = Environment.UserName.ToString().ToUpper();
                 if (_sUsuario == "AGONZ0")
+                {
                     btnMensual.Visible = true;
+                    btHeadc.Visible = true;
+                }
+                    
 
-                sttVersion.Text = "1.0.0.43";
+                sttVersion.Text = "1.0.0.45";
 
                 CargarColumnas(0);
                 CargarColumnas(1);
@@ -47,7 +51,7 @@ namespace CloverRH
                 CargarData();
                 CargarDetalle();
 
-                timer1.Start();
+                //timer1.Start();
             }
             catch (Exception ex)
             {
@@ -58,21 +62,20 @@ namespace CloverRH
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            //Iniciar();
+            Iniciar();
         }
         private void Iniciar()
         {
-            /*
+            
             //TRESS
             GeneraAsistencia(DateTime.Today, true);
             //CPRO
             GeneraKanban(true);
             GeneraGlobals();
             GeneraEnvios();
-            */
-
             GeneraInvCiclico();
             GenerarInvCiclicoPickline();
+            
         }
         #endregion
 
@@ -1733,19 +1736,19 @@ namespace CloverRH
             
         }
 
-
-        #endregion
-
         private void btGlobal_Click(object sender, EventArgs e)
         {
-            //GeneraKanban(false);
-            //GeneraGlobals();
+            GeneraKanban(false);
+            GeneraGlobals();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
             GeneraEnvios();
         }
+
+        #endregion
+
 
         #region regActividadesIT
         private void btnMensual_Click(object sender, EventArgs e)
@@ -1788,6 +1791,7 @@ namespace CloverRH
             act.Usuario = _sUsuario;
             act.Axo = _iAxo;
             act.Mes = _iMes;
+            
             if (!ActuserLogicaIT.Verificar(act))
             {
                
@@ -1801,7 +1805,7 @@ namespace CloverRH
                 dtExc.Columns.Add("descrip", typeof(string));
                 dtExc.Columns.Add("solicita", typeof(string));
 
-                for (int i = 1; i <= 5; i++)
+                for (int i = 1; i <= 4; i++)
                 {
                     string sWeekFile = monthName + " W0" + i.ToString() + ".xlsx";
                     string sFileW = sPath + @"\" + sWeekFile;
@@ -1842,7 +1846,8 @@ namespace CloverRH
                         continue;
                 }
             }
-            for (int i = 5; i <= 5; i++)
+            
+            for (int i = 1; i <= 4; i++)
             {
                 string sWeekFile = monthName + " W0" + i.ToString() + ".xlsx";
                 string sFileW = sPath + @"\" + sWeekFile;
@@ -1913,7 +1918,7 @@ namespace CloverRH
                         iExc++;
 
                     string sDescrip = _data.Rows[x][1].ToString();
-                    string sCat = _data.Rows[x][2].ToString();
+                    string sCat = _data.Rows[x][2].ToString().Trim();
                     int iCant = int.Parse(_data.Rows[x][3].ToString());
                     int iCol = Array.IndexOf(sCategos, sCat);
 
@@ -2234,7 +2239,7 @@ namespace CloverRH
                         if (xlRange.Cells[i, 8].Value2 != null)
                             sProyecto = Convert.ToString(xlRange.Cells[i, 8].Value2.ToString());
 
-                        _dt.Rows.Add(sSemana,sDia,sCatego,sDepto,sMins,sProyecto,sServicio,sSolicita);
+                        _dt.Rows.Add(sSemana,sDia,sCatego.Trim(),sDepto,sMins,sProyecto,sServicio,sSolicita);
 
                     }
                 }
@@ -2258,20 +2263,21 @@ namespace CloverRH
             return _dt;
         }
         #endregion
+
         #region regHeadCount
         private void btHeadc_Click(object sender, EventArgs e)
         {
-            string sArchivo = @"C:\Users\agonz0\Documentos  Personales\CloverPro\SIMULADOR DE HC.xlsx";
+            //GeneraInvCiclico();
+            //GenerarInvCiclicoPickline();
+            string sArchivo = @"C:\Users\agonz0\Documentos  Personales\CloverPro\SIMULADOR DE HC_COLOR.xlsx";
             getFromExcelHC(sArchivo);
         }
         private void getFromExcelHC(string _asArchivo)
         {
-            int iExCont = 0;
+            int iExCont = 0;//Ron
             try
             {
                 Cursor.Current = Cursors.WaitCursor;
-
-               
 
                 Excel.Application xlApp = new Excel.Application();
                 Excel.Workbooks xlWorkbookS = xlApp.Workbooks;
@@ -2283,13 +2289,13 @@ namespace CloverRH
 
                 int iSheets = xlWorkbook.Sheets.Count;
                 
-                xlWorksheet = xlWorkbook.Sheets["Lines COLOR"];
+                xlWorksheet = xlWorkbook.Sheets[1];
 
                 //                string sDia = xlWorksheet.Name.Substring(3, 2);
 
                 //Excel.Range xlRange = xlWorksheet.UsedRange;
                 xlWorksheet.Select();
-                Excel.Range xlRange = xlWorksheet.get_Range("A1", "M600");
+                Excel.Range xlRange = xlWorksheet.get_Range("A1", "M800");
                 int rowCount = xlRange.Rows.Count;
                 int colCount = xlRange.Columns.Count;
                 string sLinea = string.Empty;
@@ -2346,10 +2352,11 @@ namespace CloverRH
                         int iId = sLin.IndexOf("-");
                         if ((iId > 0))
                         {
-                            string sLine = sLin.Substring(iId + 1);
+                            string sLine = sLin.Substring(0,iId);
 
                             sLinex[iCont] = sLine.Trim();
-                            sLin = sLin.Substring(0, iId - 1).Trim();
+                            if(sLin.IndexOf("-")!=-1)
+                                sLin = sLin.Substring(iId+1).Trim();
                             
                             iCont++;
                         }
@@ -2393,7 +2400,7 @@ namespace CloverRH
         }
         #endregion
 
-
+        #region regCicleCount
         private void GeneraInvCiclico()
         {
             BinContLogica bincont = new BinContLogica();
@@ -2445,11 +2452,12 @@ namespace CloverRH
 
                 if (BinContLogica.VerificarRegistros(bincont))
                 {
+                    Cursor = Cursors.Default;
                     return;
                 }
 
                 DataTable dt = LoadFile(sArchivo);
-                               
+                File.Delete(sArchivo);
 
                 for (int x = 0; x < dt.Rows.Count; x++)
                 {
@@ -2488,8 +2496,6 @@ namespace CloverRH
                     }
                 }
 
-               
-
             }
             catch (Exception ex)
             {
@@ -2497,9 +2503,6 @@ namespace CloverRH
                 Cursor = Cursors.Arrow;
             }
             Cursor = Cursors.Arrow;
-
-
-
         }
 
         private void GenerarInvCiclicoPickline()
@@ -2548,13 +2551,21 @@ namespace CloverRH
                     Cursor = Cursors.Default;
                     return;
                 }
-                bincont.hora = sHora;                
+
+                DateTime dtTime = DateTime.Now;
+                int iHora = dtTime.Hour;
+                string sHoraG = Convert.ToString(iHora);
+                string sHrReg = sHoraG.PadLeft(2, '0') + ":00";
+                bincont.hora = sHrReg;
+                               
                 if (!BinContLogica.VerificarRegistros(bincont))
                 {
+                    Cursor = Cursors.Default;
                     return;
                 }
                 DataTable dtBinCont = BinContLogica.obtenerBinCont(bincont);
                 DataTable dt = LoadFile(sArchivo);
+                File.Delete(sArchivo);
 
                 for (int x = 0; x < dt.Rows.Count; x++)
                 {
@@ -2592,6 +2603,7 @@ namespace CloverRH
             }
             catch (Exception ex)
             {
+                Cursor = Cursors.Arrow;
                 MessageBox.Show(ex.ToString(), Text, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
             }
         }
@@ -2599,13 +2611,13 @@ namespace CloverRH
         public void compararInvCiclico(DataTable dt_BinCont, DataTable dt_Pickline)
         {
             BinContLogica bincont = new BinContLogica();
-            string bincodepick = "";
-            string itempick = "";
-            double SUMCant = 0;
+            string sBinCodepick = "";
+            string sItempick = "";
+            double dSumCant = 0;
 
             for (int x = 0; x < dt_BinCont.Rows.Count; x++)
             {
-                SUMCant = 0;
+                dSumCant = 0;
                 bincont.folio = dt_BinCont.Rows[x][0].ToString();
                 bincont.fecha = DateTime.Parse(dt_BinCont.Rows[x][1].ToString());
                 bincont.hora = dt_BinCont.Rows[x][2].ToString();
@@ -2618,23 +2630,22 @@ namespace CloverRH
 
                 for (int cont_pick=0; cont_pick < dt_Pickline.Rows.Count; cont_pick++)
                 {
-                    bincodepick = dt_Pickline.Rows[cont_pick][2].ToString();
-                    itempick = dt_Pickline.Rows[cont_pick][3].ToString();                   
+                    sBinCodepick = dt_Pickline.Rows[cont_pick][2].ToString();
+                    sItempick = dt_Pickline.Rows[cont_pick][3].ToString();                   
 
-                    if (bincont.bincode.Equals(bincodepick) && bincont.item.Equals(itempick))
+                    if (bincont.bincode.Equals(sBinCodepick) && bincont.item.Equals(sItempick))
                     {
-                         SUMCant+=double.Parse(dt_Pickline.Rows[cont_pick][4].ToString());
+                        double dCant = 0;
+                        if (!double.TryParse(dt_Pickline.Rows[cont_pick][4].ToString(), out dCant))
+                            dCant = 0;
+
+                        dSumCant += dCant;
                     }
-
                 }
-               
-                    BinContLogica.ActualizarBinCont(bincont, SUMCant, bincont.cantidad - SUMCant);
 
-                
-
+                double dDif = bincont.cantidad - dSumCant;
+                BinContLogica.ActualizarBinCont(bincont, dSumCant, dDif);
             }
-
-
         }
 
         private string getFileTime()
@@ -2761,7 +2772,6 @@ namespace CloverRH
             return result;
         }
 
-
+        #endregion
     }
-
 }

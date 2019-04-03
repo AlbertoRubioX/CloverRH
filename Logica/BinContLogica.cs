@@ -25,8 +25,8 @@ namespace Logica
 
         public static void guardar(BinContLogica bincont)
         {
-            string[] parametros = {"@Hora","@Planta","@Bincode","@Item","@Descrip","@Um","@Cantidad"};
-            AccesoDatos.ActualizarPRO("sp_binCont", parametros, bincont.hora, bincont.planta, bincont.bincode, bincont.item, bincont.descrip, bincont.um, bincont.cantidad);
+            string[] parametros = {"@Hora","@Planta","@Bincode","@Item","@Descrip","@UM","@Cantidad"};
+            AccesoDatos.ActualizarPRO("sp_mant_bincont", parametros, bincont.hora, bincont.planta, bincont.bincode, bincont.item, bincont.descrip, bincont.um, bincont.cantidad);
 
         }
 
